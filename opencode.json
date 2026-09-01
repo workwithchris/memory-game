@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "skills": {
+    "paths": [
+      "/Users/leanqdigital/.claude/skills/caveman",
+      "/Users/leanqdigital/.agents/skills/ponytail",
+      "/Users/leanqdigital/.agents/skills/find-skills",
+      "/Users/leanqdigital/.agents/skills/frontend-design",
+      "/Users/leanqdigital/.config/opencode/skills/web-perf"
+    ]
+  }
+}
