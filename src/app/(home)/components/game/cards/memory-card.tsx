@@ -9,11 +9,11 @@ export default function MemoryCard({ color, index }: { color: string, index: num
         gameType
     } = memoryGameStore();
 
-    // preview phase: cells start lit, then hide after previewMs
+    // preview phase: the full board is shown first so you can memorize it, then cards flip face-down
     const [isMatched, setIsMatched] = useState(true);
     const previewMs = gameType === "Number-Sequence"
-        ? complexity === "Easy" ? 500 : complexity === "Medium" ? 1000 : complexity === "Hard" ? 3000 : 6000
-        : complexity === "Easy" ? 300 : complexity === "Medium" ? 500 : complexity === "Hard" ? 3000 : 6000;
+        ? complexity === "Easy" ? 1500 : complexity === "Medium" ? 2000 : complexity === "Hard" ? 3500 : 6000
+        : complexity === "Easy" ? 1200 : complexity === "Medium" ? 1800 : complexity === "Hard" ? 2500 : 4000;
 
     useEffect(() => {
         const timer = setTimeout(() => setIsMatched(false), previewMs);

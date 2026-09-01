@@ -6,6 +6,8 @@ import { sfx } from '@/app/(home)/helpers/sfx';
 export default function NumberSequenceCard({ color, index, isMatched, setIsMatched }: GameCardProp) {
     const { complexity, matchedCards, setMatchedCards, locked, setLocked, moves, setMoves, peeking } = memoryGameStore();
 
+    const shown = isMatched || peeking;
+
     const handleNumberSequenceSelect = () => {
         if (isMatched || locked || peeking) return;
         sfx.flip();
@@ -38,18 +40,20 @@ export default function NumberSequenceCard({ color, index, isMatched, setIsMatch
         }
     }, [matchedCards])
 
-    return <button
-        type="button"
-        aria-label={isMatched || peeking ? `Sequence number ${color}` : `Hidden card ${index + 1}`}
-        onClick={handleNumberSequenceSelect}
-        className={`${complexity === "Hard" || complexity === "Extreme" ? "h-12 w-12" : "h-16 w-16"} lg:h-20 lg:w-20 hover:scale-105 cursor-pointer transition-all rounded focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
-    >
-        <div className='flex items-center justify-center h-full rounded'
-            style={{
-                backgroundColor: isMatched || peeking ? "green" : "white",
-                color: isMatched || peeking ? "white" : "black"
-            }}>
-            {(isMatched || peeking) && <span className='font-bold tabular-nums'>{color}</span>}
-        </div>
-    </button>
+    return (
+        <button
+            type="button"
+            aria-label={shown ? `Sequence number ${color}` : `Hidden card ${index + 1}`}
+            onClick={handleNumberSequenceSelect}
+            className={`card-flip-btn pop-in ${complexity === "Hard" || complexity === "Extreme" ? "h-12 w-12" : "h-16 w-16"} lg:h-20 lg:w-20 hover:scale-105 cursor-pointer transition-all rounded focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
+            style={{ animationDelay: `${index * 15}ms` }}
+        >
+            <span className="flip-3d" style={{ transform: shown ? "rotateY(0deg)" : "rotateY(180deg)" }}>
+                <span className="flip-face bg-white border shadow-sm" aria-hidden={shown} />
+                <span className="flip-face back bg-white border shadow-sm" aria-hidden={!shown}>
+                    {shown && <span className='font-bold tabular-nums'>{color}</span>}
+                </span>
+            </span>
+        </button>
+    );
 }
