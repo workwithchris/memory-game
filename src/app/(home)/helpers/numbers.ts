@@ -22,13 +22,7 @@ function generateGameNumbers(length: number) {
 };
 
 function generateRandomNumbersArray(length: number) {
-    const numbersArray = [];
-    for (let i = 0; i < length; i++) {
-        numbersArray.push(getRandomNumber());
-    }
-    return numbersArray;
-}
-
-function getRandomNumber(): number {
-    return Math.floor(Math.random() * 24) + 1;
+    // unique values only — duplicates would make some cards permanently unmatchable
+    const pool = shuffle(Array.from({ length: 48 }, (_, i) => i + 1));
+    return pool.slice(0, length);
 }

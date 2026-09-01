@@ -17,6 +17,9 @@ export default function Newgame() {
         setGameState,
         setPlayerName,
         setMatchedCards,
+        setMoves,
+        setOutcome,
+        setLocked,
         setStartTime,
         hasGameTimer,
         setGameTimer,
@@ -31,6 +34,9 @@ export default function Newgame() {
         setPlayerName(playernameRef.current!.value);
         setGameState("Playing");
         setMatchedCards([])
+        setMoves(0)
+        setOutcome("won")
+        setLocked(false)
         setStartTime(new Date().toISOString());
         playernameRef.current!.value = "";
     }

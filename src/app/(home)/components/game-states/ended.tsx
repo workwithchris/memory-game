@@ -16,13 +16,14 @@ function getTimeDifference(start: Date, end: Date): string {
 }
 export default function Ended() {
   const { startTime,
-    endTime, playerName, setStartTime, setMatchedCards,
+    endTime, playerName, outcome, setStartTime, setMatchedCards, setMoves, setOutcome,
     setGameState, setFirstCard, setSecondCard } = memoryGameStore()
+  const lost = outcome === "lost";
   return (
     <Card className='p-8 space-y-5 text-center'>
-      <h2 className='text-3xl'>Congratulations</h2>
+      <h2 className='text-3xl'>{lost ? "Time's Up" : "Congratulations"}</h2>
       <p className='text-2xl font-semibold font-serif'>{playerName}</p>
-      <p className='text-xl'>You have completed the game in</p>
+      <p className='text-xl'>{lost ? "You ran out of time after" : "You have completed the game in"}</p>
       <p className='text-4xl uppercase font-bold'>{getTimeDifference(new Date(startTime!), new Date(endTime!))}</p>
       <hr />
       <ResultGame />
@@ -33,6 +34,8 @@ export default function Ended() {
           setFirstCard(null)
           setSecondCard(null)
           setMatchedCards([])
+          setMoves(0)
+          setOutcome("won")
         }}>Play Again</Button>
         <Button onClick={() => {
           setGameState("New");

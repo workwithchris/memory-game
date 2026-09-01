@@ -15,37 +15,33 @@ export default function useMemoryGame() {
         setMatchedCards,
         setFirstCard,
         setSecondCard,
+        setLocked,
         setEndTime,
+        setOutcome,
         gameType
     } = memoryGameStore();
 
-    const [gameCards, setGameCards] = useState<GameType[]>([]);
-
-
     function endGame() {
         setGameState("Ended")
+        setOutcome("won")
         setEndTime(new Date().toISOString())
     }
 
-    useEffect(() => {
-        if (gameType === "Color") {
-            setGameCards(generateColors(complexity))
-        } else if (gameType === "Number") {
-            setGameCards(generateNumbers(complexity))
-        }
-        else if (gameType === "Emoji") {
-            setGameCards(generateEmojis(complexity))
-        }
-        else if (gameType === "Number-Sequence") {
-            setGameCards(generateNumberSequence(complexity))
-        } else {
-            setGameCards(generateColors(complexity));
-        }
-    }, [])
+    function cardsFor(type: GameType, level: string) {
+        if (type === "Number") return generateNumbers(level);
+        if (type === "Emoji") return generateEmojis(level);
+        if (type === "Number-Sequence") return generateNumberSequence(level);
+        return generateColors(level);
+    }
+
+    // deck is generated once per round
+    const [gameCards] = useState(() => cardsFor(gameType, complexity));
 
     useEffect(() => {
         if (secondCard && gameType !== "Number-Sequence") {
-            setTimeout(() => {
+            // lock input while the pair is being judged
+            setLocked(true);
+            const timer = setTimeout(() => {
                 if (firstCard!.color === secondCard!.color) {
                     setMatchedCards([...matchedCards, firstCard!, secondCard])
                 } else {
@@ -55,9 +51,9 @@ export default function useMemoryGame() {
                 }
                 setFirstCard(null)
                 setSecondCard(null)
+                setLocked(false)
             }, 800);
-        } else {
-
+            return () => clearTimeout(timer);
         }
     }, [secondCard])
 
