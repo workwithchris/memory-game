@@ -1,24 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import memoryGameStore from "../store/store";
-import { GameType } from "../types";
-import generateNumbers from "../helpers/numbers";
-import { generateColors } from "../helpers/colors";
-import generateNumberSequence from "../helpers/numbers-sequence";
-import generateEmojis from "../helpers/emoji";
-import { dailySeed, seededRng } from "../helpers/core";
+import { buildDeck } from "../helpers/deck";
 import { sfx } from "../helpers/sfx";
-
-function cardsFor(type: GameType, level: string, rng: () => number) {
-    if (type === "Number") return generateNumbers(level, rng);
-    if (type === "Emoji") return generateEmojis(level, rng);
-    if (type === "Number-Sequence") return generateNumberSequence(level, rng);
-    return generateColors(level, rng);
-}
 
 export default function useMemoryGame() {
     const {
         complexity,
         mode,
+        gameCards,
         firstCard,
         matchedCards,
         lives,
@@ -44,6 +33,8 @@ export default function useMemoryGame() {
         gameType
     } = memoryGameStore();
 
+    const duelish = mode === "Duel" || mode === "BestOf3";
+
     function endGame() {
         sfx.win();
         setGameState("Ended")
@@ -58,11 +49,6 @@ export default function useMemoryGame() {
         setEndTime(new Date().toISOString())
     }
 
-    // deck is generated once per round; Daily mode uses a date-seeded shuffle
-    const [gameCards] = useState(() =>
-        cardsFor(gameType, complexity, mode === "Daily" ? seededRng(dailySeed()) : Math.random)
-    );
-
     useEffect(() => {
         if (secondCard && gameType !== "Number-Sequence") {
             // lock input while the pair is being judged
@@ -73,7 +59,7 @@ export default function useMemoryGame() {
                     const nextStreak = streak + 1;
                     setStreak(nextStreak);
                     setMaxStreak(Math.max(nextStreak, memoryGameStore.getState().maxStreak));
-                    if (mode === "Duel") {
+                    if (duelish) {
                         const scores: [number, number] = [...playerScores];
                         scores[activePlayer] += 1;
                         setPlayerScores(scores);
@@ -83,7 +69,7 @@ export default function useMemoryGame() {
                     sfx.miss();
                     setStreak(0);
                     setMismatches(memoryGameStore.getState().mismatches + 1);
-                    if (mode === "Duel") {
+                    if (duelish) {
                         setActivePlayer(activePlayer === 0 ? 1 : 0);
                     }
                     if (livesEnabled) {

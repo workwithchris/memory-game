@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Memory Game
 
-## Getting Started
+A memory match game built with Next.js. Flip two cards per turn — matching pairs stay open, misses hide again. Clear every pair to win.
 
-First, run the development server:
+Play it: four game types, five modes, four difficulty levels, all playable solo or hot-seat with a friend.
+
+## Features
+
+**Game types**
+
+- **Color** — match identical swatches
+- **Number** — match identical numbers
+- **Number Sequence** — reveal numbers in order, 1, 2, 3… (the header shows what comes next)
+- **Emoji** — match identical emojis
+
+**Modes**
+
+- **Classic** — a straightforward round
+- **Daily Challenge** — a date-seeded board, the same for everyone that day; share the link (`/?daily=YYYYMMDD`) to race friends
+- **Time Attack** — 60 seconds, clear as much as you can
+- **Duel** — hot-seat for two players: a match keeps your turn, a miss passes it
+- **Best of 3** — a duel across three rounds, first to two round wins takes the series
+
+**Complexity** — Easy (8 pairs), Medium (16), Hard (24), Extreme (24, and any mismatch wipes your found pairs).
+
+**Tools**
+
+- Optional **3 lives** — each mismatch costs one; run out and the round is lost
+- **Peek** — once per round, reveal the whole board for 3 seconds (costs 2 moves)
+- **Pause** — hides the board and freezes the timer
+- **Sound effects** — Web Audio, toggleable
+- **Keyboard play** — Tab into the grid, arrow keys to move, Enter/Space to flip
+
+**Progress (saved locally)**
+
+- Best time and fewest moves per game type + complexity
+- Achievements (first clear, flawless run, 5-streak, daily grinder, and more)
+- An in-progress round survives a page refresh
+
+## Stack
+
+- Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 3.4
+- zustand for game state (persisted to localStorage)
+- shadcn/ui primitives, vaul drawer, lucide icons
+- canvas-confetti for wins
+- No backend, no env vars required
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Other scripts:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build    # production build (also typechecks)
+npm run lint     # eslint
+npm start        # serve the production build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Project structure
 
-## Learn More
+```
+src/app/(home)/           # the game (single-page app)
+  store/store.ts          # zustand store (persisted)
+  helpers/                # pure logic: decks, seeded RNG, sfx, stats/achievements
+  hook/                   # game + countdown hooks
+  components/game/        # board, cards, header, modals
+  components/game-states/ # setup + end screens
+  components/game-info/   # how-to-play drawer, progress viewer
+src/components/ui/        # shadcn/ui primitives
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Deploys to Vercel as-is (static export of the app route). The service worker (`public/sw.js`) enables basic offline support in production.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Created by Chris Thapa.

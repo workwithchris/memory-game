@@ -35,13 +35,18 @@ export default function Ended() {
     lostLife,
     matchedCards,
     playerScores,
+    roundWins,
+    setRoundWins,
+    setPlayerScores,
+    setActivePlayer,
     setStartTime, setMatchedCards, setMoves, setOutcome, setLocked,
     setGameState, setFirstCard, setSecondCard,
   } = memoryGameStore()
 
   const lost = outcome === "lost";
   const won = !lost;
-  const duel = mode === "Duel";
+  const duelish = mode === "Duel" || mode === "BestOf3";
+  const bestOf3 = mode === "BestOf3";
 
   // run recorded once, on mount
   const [result] = React.useState(() => {
@@ -53,7 +58,7 @@ export default function Ended() {
     const earned = evaluate(run, []);
     unlock(earned);
     let value: number | null = null;
-    if (won && !duel) {
+    if (won && !duelish) {
       const elapsedSec = Math.round(timeMs / 1000);
       value = Math.max(0,
         matchedCards.length * 100
@@ -65,43 +70,95 @@ export default function Ended() {
     return { run, flags, earned, value };
   });
 
+  const { run, flags: bestFlags, earned: newAchievements, value: score } = result;
+
+  // BestOf3: round winner derived from scores; credit happens on "Next round"
+  const roundWinner = bestOf3 && playerScores[0] !== playerScores[1]
+    ? (playerScores[0] > playerScores[1] ? 0 : 1)
+    : null;
+
+  const seriesWinner = bestOf3 && (roundWins[0] >= 2 || roundWins[1] >= 2)
+    ? (roundWins[0] >= 2 ? 0 : 1)
+    : null;
+
   useEffect(() => {
-    if (won && !duel) {
+    if (won && !duelish) {
       confetti({ particleCount: 120, spread: 80, disableForReducedMotion: true });
     }
   }, []);
 
-  const { run, flags: bestFlags, earned: newAchievements, value: score } = result;
-
-  const winner = playerScores[0] === playerScores[1] ? null : (playerScores[0] > playerScores[1] ? 0 : 1);
-
   function share() {
-    const text = duel
-      ? `Memory Duel: ${playerName} ${playerScores[0]} — ${playerScores[1]} ${player2Name}${winner !== null ? `, ${winner === 0 ? playerName : player2Name} wins` : ", tied"}`
+    const dailySuffix = mode === "Daily" && run.gameType ? ` — replay: ${window.location.origin}/?daily=${run.mode === "Daily" ? memoryGameStore.getState().dailySeedValue : ""}` : "";
+    const text = duelish
+      ? `Memory Duel: ${playerName} ${playerScores[0]} — ${playerScores[1]} ${player2Name}${roundWinner !== null ? `, ${roundWinner === 0 ? playerName : player2Name} takes the round` : ", tied"}`
       : won
         ? `Memory Game — ${gameType}/${complexity}: cleared in ${getTimeDifference(new Date(startTime!), new Date(endTime!))} with ${moves} moves${score !== null ? ` (score ${score})` : ""}`
         : `Memory Game — ${gameType}/${complexity}: ${lost ? "time ran out" : "lives ran out"} after ${matchedCards.length / 2} pairs and ${moves} moves`;
     if (navigator.share) {
       navigator.share({ title: "Memory Game", text }).catch(() => { });
     } else {
-      navigator.clipboard?.writeText(text).catch(() => { });
+      navigator.clipboard?.writeText(text + (mode === "Daily" ? dailySuffix : "")).catch(() => { });
     }
+  }
+
+  function nextRound() {
+    // credit the round winner, keep series progress, reset the round
+    if (roundWinner !== null) {
+      const next: [number, number] = [...roundWins];
+      next[roundWinner] += 1;
+      setRoundWins(next);
+    }
+    setPlayerScores([0, 0]);
+    setActivePlayer(0);
+    setFirstCard(null)
+    setSecondCard(null)
+    setMatchedCards([])
+    setMoves(0)
+    setOutcome("won")
+    setLocked(false)
+    setGameState("Playing");
+    setStartTime(new Date().toISOString());
+  }
+
+  function resetRoundState() {
+    setFirstCard(null)
+    setSecondCard(null)
+    setMatchedCards([])
+    setMoves(0)
+    setOutcome("won")
+    setLocked(false)
   }
 
   return (
     <Card className='p-8 space-y-5 text-center'>
-      <h2 className='text-3xl'>{duel ? "Duel Over" : lost ? "Time's Up" : "Congratulations"}</h2>
-      {duel ? (
-        <p className='text-2xl font-semibold font-serif'>
-          {winner === null ? "It's a tie!" : `${winner === 0 ? playerName : player2Name} wins`}
-        </p>
-      ) : (
-        <p className='text-2xl font-semibold font-serif'>{playerName}</p>
-      )}
-      {duel ? (
-        <p className='text-4xl uppercase font-bold tabular-nums'>{playerName} {playerScores[0]} — {playerScores[1]} {player2Name}</p>
+      <h2 className='text-3xl'>
+        {seriesWinner !== null
+          ? "Series Won!"
+          : bestOf3
+            ? `Round ${roundWins[0] + roundWins[1] + 1} Over`
+            : duelish ? "Duel Over" : lost ? "Time's Up" : "Congratulations"}
+      </h2>
+      {duelish ? (
+        <>
+          <p className='text-2xl font-semibold font-serif'>
+            {seriesWinner !== null
+              ? `${seriesWinner === 0 ? playerName : player2Name} wins the series`
+              : roundWinner !== null
+                ? `${roundWinner === 0 ? playerName : player2Name} takes the round`
+                : "It's a tie!"}
+          </p>
+          <p className='text-4xl uppercase font-bold tabular-nums'>
+            {playerName} {playerScores[0]} — {playerScores[1]} {player2Name}
+          </p>
+          {bestOf3 && (
+            <p className='text-lg tabular-nums'>
+              Series: {playerName} {roundWins[0]} — {roundWins[1]} {player2Name} (first to 2)
+            </p>
+          )}
+        </>
       ) : (
         <>
+          <p className='text-2xl font-semibold font-serif'>{playerName}</p>
           <p className='text-xl'>{lost ? "You ran out of time after" : "You have completed the game in"}</p>
           <p className='text-4xl uppercase font-bold'>{getTimeDifference(new Date(startTime!), new Date(endTime!))}</p>
           {score !== null && <p className='text-xl'>Score: <span className='font-bold tabular-nums'>{score}</span></p>}
@@ -123,15 +180,21 @@ export default function Ended() {
         </div>
       )}
       <hr />
-      {!duel && <ResultGame />}
+      {!duelish && <ResultGame />}
       <div className='flex-col gap-2 flex'>
+        {bestOf3 && seriesWinner === null ? (
+          <Button onClick={nextRound}>Next round</Button>
+        ) : (
+          <Button onClick={() => {
+            resetRoundState();
+            if (bestOf3) { setRoundWins([0, 0]); setPlayerScores([0, 0]); setActivePlayer(0); }
+            setGameState("Playing");
+            setStartTime(new Date().toISOString());
+          }}>Play Again</Button>
+        )}
         <Button onClick={() => {
           resetRoundState();
-          setGameState("Playing");
-          setStartTime(new Date().toISOString());
-        }}>Play Again</Button>
-        <Button onClick={() => {
-          resetRoundState();
+          if (bestOf3) { setRoundWins([0, 0]); setPlayerScores([0, 0]); setActivePlayer(0); }
           setGameState("New");
           setStartTime(null);
         }}>New Game</Button>
@@ -141,15 +204,6 @@ export default function Ended() {
       </div>
     </Card>
   )
-
-  function resetRoundState() {
-    setFirstCard(null)
-    setSecondCard(null)
-    setMatchedCards([])
-    setMoves(0)
-    setOutcome("won")
-    setLocked(false)
-  }
 }
 
 const ResultGame = () => {

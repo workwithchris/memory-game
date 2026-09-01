@@ -25,6 +25,9 @@ export const GameHeader = () => {
         hintsLeft,
         peeking,
         locked,
+        paused,
+        pausedAt,
+        pausedTotalMs,
         setPeeking,
         setLocked,
         setHintsLeft,
@@ -32,6 +35,7 @@ export const GameHeader = () => {
         mode,
         activePlayer,
         playerScores,
+        roundWins,
         player2Name,
         playerName,
         complexity,
@@ -47,6 +51,7 @@ export const GameHeader = () => {
 
     const totalPairs = TOTAL_PAIRS[gameType]?.[complexity] ?? TOTAL_PAIRS.default[complexity];
     const found = gameType === "Number-Sequence" ? matchedCards.length : matchedCards.length / 2;
+    const nextTarget = Math.min(matchedCards.length + 1, totalPairs);
 
     function timeOut() {
         setFirstCard(null);
@@ -59,7 +64,7 @@ export const GameHeader = () => {
     }
 
     function peek() {
-        if (hintsLeft <= 0 || peeking || locked) return;
+        if (hintsLeft <= 0 || peeking || locked || paused) return;
         sfx.peek();
         setHintsLeft(0);
         setMoves(moves + 2); // peek costs 2 moves
@@ -81,13 +86,18 @@ export const GameHeader = () => {
                 <span className='text-xs uppercase tracking-wider text-muted-foreground bg-primary/90 text-primary-foreground px-2 py-0.5 rounded'>
                     {mode}
                 </span>
+                {gameType === "Number-Sequence" && (
+                    <span className='tabular-nums'>
+                        <span className='text-xs uppercase tracking-wider text-muted-foreground'>Find</span> {nextTarget}
+                    </span>
+                )}
                 {hasGameTimer ? (
                     <div className='flex items-baseline gap-2'>
                         <span className='text-muted-foreground text-xs uppercase tracking-wider'>Time left</span>
-                        <CountdownTimer onComplete={timeOut} time={+gameTimer!} />
+                        <CountdownTimer onComplete={timeOut} time={+gameTimer!} paused={paused} />
                     </div>
                 ) : (
-                    <Timer startDate={startTime} />
+                    <Timer startDate={startTime} pausedAt={pausedAt} pausedTotalMs={pausedTotalMs} />
                 )}
                 {livesEnabled && <span aria-label={`${lives} lives left`}>{"♥".repeat(lives)}<span className='opacity-30'>{"♥".repeat(3 - lives)}</span></span>}
                 {streak > 0 && <span aria-label={`${streak} match streak`}>🔥 {streak}</span>}
@@ -95,10 +105,15 @@ export const GameHeader = () => {
                     Pairs {found}/{totalPairs} · Moves {moves}
                 </span>
             </div>
-            {mode === "Duel" && (
+            {(mode === "Duel" || mode === "BestOf3") && (
                 <div className='flex items-center gap-4 font-mono text-sm'>
                     <span className='uppercase tracking-wider text-muted-foreground text-xs'>Turn</span>
                     <span className='font-bold'>{activePlayer === 0 ? playerName : player2Name}</span>
+                    {mode === "BestOf3" && (
+                        <span className='tabular-nums'>
+                            Series {roundWins[0]}—{roundWins[1]}
+                        </span>
+                    )}
                     <span className='tabular-nums ml-auto'>
                         {playerName} {playerScores[0]} · {playerScores[1]} {player2Name}
                     </span>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export default function useCountdownTimer(time: number, onComplete: (value:boolean) => void) {
+export default function useCountdownTimer(time: number, onComplete: (value: boolean) => void, paused = false) {
     const [timeLeft, setTimeLeft] = useState(time * 60);
 
     const timerRef = useRef<any>(null);
@@ -12,6 +12,7 @@ export default function useCountdownTimer(time: number, onComplete: (value:boole
 
         timerRef.current = setInterval(() => {
             setTimeLeft((prevTime) => {
+                if (paused) return prevTime;
                 if (prevTime <= 1) {
                     clearInterval(timerRef.current);
                     stopTimer();
@@ -37,6 +38,10 @@ export default function useCountdownTimer(time: number, onComplete: (value:boole
 
     useEffect(() => {
         startTimer();
+        // clear on unmount so the countdown can't fire after leaving the round
+        return () => {
+            stopTimer();
+        };
     }, []);
 
     return formatTime(timeLeft);

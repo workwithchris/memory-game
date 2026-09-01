@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import memoryGameStore from '../../store/store'
 import { bestFor } from '../../helpers/progress'
+import { buildDeck } from '../../helpers/deck'
 
 export default function Newgame() {
     const playernameRef = useRef<HTMLInputElement>(null);
@@ -19,7 +20,6 @@ export default function Newgame() {
         setGameState,
         setPlayerName,
         setPlayer2Name,
-        setMatchedCards,
         setStartTime,
         hasGameTimer,
         setGameTimer,
@@ -34,10 +34,14 @@ export default function Newgame() {
         setLivesEnabled,
         soundOn,
         setSoundOn,
-        resetRound
+        dailySeedValue,
+        setDailySeedValue,
+        resetRound,
+        setGameCards,
     } = memoryGameStore();
 
     const best = bestFor(gameType, complexity);
+    const duelish = mode === "Duel" || mode === "BestOf3";
 
     function applyMode(next: string) {
         setMode(next as typeof mode);
@@ -52,8 +56,9 @@ export default function Newgame() {
 
     function startGame() {
         setPlayerName(playernameRef.current!.value || "Player");
-        if (mode === "Duel") setPlayer2Name(player2nameRef.current?.value || "Player 2");
+        if (duelish) setPlayer2Name(player2nameRef.current?.value || "Player 2");
         resetRound();
+        setGameCards(buildDeck(gameType, complexity, mode, dailySeedValue));
         setGameState("Playing");
         setStartTime(new Date().toISOString());
         playernameRef.current!.value = "";
@@ -62,6 +67,9 @@ export default function Newgame() {
     useEffect(() => {
         playernameRef.current!.value = playerName
         try {
+            // shared daily link: /?daily=20260901 replays that exact board
+            const seed = new URLSearchParams(window.location.search).get("daily");
+            if (seed && /^\d{8}$/.test(seed)) setDailySeedValue(parseInt(seed, 10));
             const stored = localStorage.getItem("memory-sound");
             if (stored !== null) setSoundOn(stored === "on");
         } catch { }
@@ -80,7 +88,7 @@ export default function Newgame() {
                         <Label>Player Name</Label>
                         <Input name='playerName' ref={playernameRef} required />
                     </div>
-                    {mode === "Duel" && (
+                    {duelish && (
                         <div>
                             <Label>Player 2 Name</Label>
                             <Input name='player2Name' ref={player2nameRef} placeholder="Player 2" />
@@ -97,8 +105,12 @@ export default function Newgame() {
                                 <SelectItem value="Daily">Daily Challenge</SelectItem>
                                 <SelectItem value="TimeAttack">Time Attack (60s)</SelectItem>
                                 <SelectItem value="Duel">Duel (2 players)</SelectItem>
+                                <SelectItem value="BestOf3">Best of 3 (2 players)</SelectItem>
                             </SelectContent>
                         </Select>
+                        {mode === "Daily" && dailySeedValue && (
+                            <p className='pt-1 text-xs text-muted-foreground'>Board of {dailySeedValue}</p>
+                        )}
                     </div>
                     <div>
                         <Label>Game Type</Label>

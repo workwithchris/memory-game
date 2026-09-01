@@ -1,12 +1,12 @@
 import React from 'react';
 import useCountdownTimer from '../../hook/countdown-timer.hook';
 
-const CountdownTimer = ({ time, onComplete }: { time: number, onComplete: (value: boolean) => void }) => {
-  const timerVal = useCountdownTimer(time, onComplete);
+const CountdownTimer = ({ time, onComplete, paused = false }: { time: number, onComplete: (value: boolean) => void, paused?: boolean }) => {
+  const timerVal = useCountdownTimer(time, onComplete, paused);
   return (
-    <>
-      Time Left: {timerVal}
-    </>
+    <span className='font-bold tabular-nums'>
+      {timerVal}
+    </span>
   );
 };
 

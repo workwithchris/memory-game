@@ -2,34 +2,46 @@ import React from 'react'
 
 export default function GameInfoContent() {
     return (
-        <>
-            <p>Memory Match Game is a fun and challenging color card-matching game designed to test and improve your memory skills. The game features four levels of difficulty: Easy, Medium, Hard, and Extreme. Each level increases in complexity and offers a unique challenge to keep players engaged.</p>
+        <div className='space-y-3 text-sm'>
+            <p>Flip two cards per turn. Matching pairs stay open; misses hide again. Clear every pair to win.</p>
 
-            <h2>Levels</h2>
-            <ul>
-                <li><strong>Easy (16 boxes):</strong> Perfect for beginners, this level contains 16 boxes (8 pairs). Match all pairs to win.</li>
-                <li><strong>Medium (32 boxes):</strong> A moderate challenge with 32 boxes (16 pairs). Requires more focus and memory.</li>
-                <li><strong>Hard (64 boxes):</strong> For advanced players, this level has 64 boxes (32 pairs). A true test of your memory skills.</li>
-                <li><strong>Extreme (64 boxes with reset):</strong> The ultimate challenge! This level also has 64 boxes (32 pairs), but with a twist. If a match is not made, the entire board resets, demanding impeccable memory and strategy.</li>
+            <h3 className='font-semibold'>Game types</h3>
+            <ul className='list-disc pl-5 space-y-1'>
+                <li><strong>Color</strong> — match identical swatches.</li>
+                <li><strong>Number</strong> — match identical numbers.</li>
+                <li><strong>Number Sequence</strong> — no pairs: reveal the numbers in order, 1, 2, 3… The header shows which number comes next.</li>
+                <li><strong>Emoji</strong> — match identical emojis.</li>
             </ul>
 
-            <h2>How to Play</h2>
-            <ul>
-                <li>Select a level to start the game.</li>
-                <li>Click on two boxes to reveal their color.</li>
-                <li>If the color match, they remain uncovered. If not, they are hidden again.</li>
-                <li>Continue matching pairs until all pairs are found.</li>
-                <li>In the Extreme level, make sure to match pairs correctly, or the board will reset!</li>
+            <h3 className='font-semibold'>Complexity</h3>
+            <ul className='list-disc pl-5 space-y-1'>
+                <li><strong>Easy</strong> — 8 pairs (16 cards).</li>
+                <li><strong>Medium</strong> — 16 pairs (32 cards).</li>
+                <li><strong>Hard</strong> — 24 pairs (48 cards).</li>
+                <li><strong>Extreme</strong> — 24 pairs, and any mismatch wipes your found pairs.</li>
             </ul>
 
-            <h2>Features</h2>
-            <ul>
-                <li>Engaging gameplay with increasing difficulty</li>
-                <li>Four unique levels to cater to different skill levels</li>
-                <li>Beautifully designed cards and intuitive interface</li>
-                <li>Challenge your memory and improve your cognitive skills</li>
+            <h3 className='font-semibold'>Modes</h3>
+            <ul className='list-disc pl-5 space-y-1'>
+                <li><strong>Classic</strong> — straightforward round.</li>
+                <li><strong>Daily Challenge</strong> — a seeded board, the same for everyone on that date. Share the link to race friends.</li>
+                <li><strong>Time Attack</strong> — 60 seconds, clear as much as you can.</li>
+                <li><strong>Duel</strong> — hot-seat for two: a match keeps your turn, a miss passes it.</li>
+                <li><strong>Best of 3</strong> — a duel across three rounds; first to two round wins takes the series.</li>
             </ul>
-            <p>Get ready to test your memory and have fun with Memory Match Game!</p>
-        </>
+
+            <h3 className='font-semibold'>Tools</h3>
+            <ul className='list-disc pl-5 space-y-1'>
+                <li><strong>Lives</strong> (optional) — three lives; each mismatch costs one. Run out and the round is lost.</li>
+                <li><strong>Peek</strong> — once per round, reveal the whole board for 3 seconds. Costs 2 moves. (Disabled in Number Sequence — it would spoil the order.)</li>
+                <li><strong>Pause</strong> — hides the board and freezes the timer.</li>
+                <li><strong>Sound</strong> — toggle in the top-left of the round header.</li>
+            </ul>
+
+            <h3 className='font-semibold'>Controls</h3>
+            <p>Play entirely by keyboard: Tab to reach the grid, arrow keys to move between cards, Enter/Space to flip.</p>
+
+            <p>Progress is saved locally: best times and fewest moves per type and complexity, plus achievements — check them in the stats section below.</p>
+        </div>
     )
 }

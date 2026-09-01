@@ -1,0 +1,16 @@
+{
+  "name": "Memory Game",
+  "short_name": "Memory",
+  "description": "Memory match game — colors, numbers, emojis, duels and daily challenges.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

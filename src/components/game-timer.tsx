@@ -1,14 +1,22 @@
 // src/Timer.js
 import React, { useState, useEffect } from 'react';
 
-const Timer = ({ startDate }:any) => {
+type TimerProps = {
+  startDate: string | null;
+  pausedAt?: number | null;
+  pausedTotalMs?: number;
+};
+
+const Timer = ({ startDate, pausedAt = null, pausedTotalMs = 0 }: TimerProps) => {
   const calculateTimePassed = () => {
-    const difference = +new Date() - +new Date(startDate);
+    if (!startDate) return {};
+    // while paused, freeze at the pause moment; subtract accumulated pause time
+    const now = pausedAt ?? Date.now();
+    const difference = now - +new Date(startDate) - pausedTotalMs;
     let timePassed = {};
 
     if (difference > 0) {
       timePassed = {
-        d: Math.floor(difference / (1000 * 60 * 60 * 24)),
         hr: Math.floor((difference / (1000 * 60 * 60)) % 24),
         m: Math.floor((difference / 1000 / 60) % 60),
         s: Math.floor((difference / 1000) % 60),
@@ -18,17 +26,21 @@ const Timer = ({ startDate }:any) => {
     return timePassed;
   };
 
-  const [timePassed, setTimePassed] = useState<any>(calculateTimePassed());
+  const [timePassed, setTimePassed] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimePassed(calculateTimePassed());
-    }, 1000);
+    if (pausedAt) return; // frozen while paused
+    const tick = () => setTimePassed(calculateTimePassed());
+    const first = setTimeout(tick, 0);
+    const timer = setInterval(tick, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [pausedAt, pausedTotalMs, startDate]);
 
-  const timerComponents:any = [];
+  const timerComponents: any = [];
 
   Object.keys(timePassed).forEach((interval) => {
     if (!timePassed[interval]) {
@@ -36,15 +48,15 @@ const Timer = ({ startDate }:any) => {
     }
 
     timerComponents.push(
-      <span key={interval}>
+      <span key={interval} className='tabular-nums'>
         {timePassed[interval]} {interval}{" "}
       </span>
     );
   });
 
   return (
-    <div>
-      {timerComponents.length ? timerComponents : <span>Just now</span>}
+    <div className='font-mono text-sm'>
+      {timerComponents.length ? timerComponents : <span>0 s</span>}
     </div>
   );
 };

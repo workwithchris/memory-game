@@ -14,6 +14,11 @@ export default function MemoryGame() {
         soundOn,
     } = memoryGameStore();
 
+    // restore an in-progress round after a refresh (post-mount, avoids SSR mismatch)
+    useEffect(() => {
+        void memoryGameStore.persist.rehydrate();
+    }, []);
+
     useEffect(() => {
         setSfxEnabled(soundOn);
     }, [soundOn]);
