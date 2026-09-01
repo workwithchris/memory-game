@@ -1,20 +1,5 @@
 import { shuffle } from "./core";
 
-export function generateColors(complexity: string): any[] {
-    switch (complexity) {
-        case "Easy":
-            return generateGameColor(8);
-        case "Medium":
-            return generateGameColor(16);
-        case "Hard":
-            return generateGameColor(24);
-        case "Extreme":
-            return generateGameColor(24);
-        default:
-            return generateGameColor(24);
-    }
-}
-
 // curated, visually distinct palette — random hex pairs can be near-identical
 const PALETTE = [
     "#E53935", "#F06292", "#BA68C8", "#6A1B9A", "#5C6BC0", "#1E88E5",
@@ -23,12 +8,27 @@ const PALETTE = [
     "#546E7A", "#212121", "#AD1457", "#283593", "#2E7D32", "#00838C",
 ];
 
-function generateRandomColorsArray(length: number) {
-    return shuffle([...PALETTE]).slice(0, length);
+export function generateColors(complexity: string, rng: () => number = Math.random): any[] {
+    switch (complexity) {
+        case "Easy":
+            return generateGameColor(8, rng);
+        case "Medium":
+            return generateGameColor(16, rng);
+        case "Hard":
+            return generateGameColor(24, rng);
+        case "Extreme":
+            return generateGameColor(24, rng);
+        default:
+            return generateGameColor(24, rng);
+    }
 }
 
-function generateGameColor(length: number) {
-    const color = generateRandomColorsArray(length);
-    const gameColors = shuffle([...color, ...color]);
+function generateGameColor(length: number, rng: () => number) {
+    const color = generateRandomColorsArray(length, rng);
+    const gameColors = shuffle([...color, ...color], rng);
     return gameColors
 };
+
+function generateRandomColorsArray(length: number, rng: () => number) {
+    return shuffle([...PALETTE], rng).slice(0, length);
+}

@@ -1,8 +1,11 @@
+import { Eye, Volume2, VolumeX } from "lucide-react";
+
 import memoryGameStore from "../../store/store";
 import CountdownTimer from "./countdown-timer";
 import GameBackButton from "../game-info/back-button";
 import CloseModal from "./modal/close.modal";
 import Timer from "@/components/game-timer";
+import { sfx } from "../../helpers/sfx";
 
 const TOTAL_PAIRS: Record<string, Record<string, number>> = {
     "Number-Sequence": { Easy: 16, Medium: 32, Hard: 48, Extreme: 48 },
@@ -16,14 +19,30 @@ export const GameHeader = () => {
         gameTimer,
         matchedCards,
         moves,
+        streak,
+        lives,
+        livesEnabled,
+        hintsLeft,
+        peeking,
+        locked,
+        setPeeking,
+        setLocked,
+        setHintsLeft,
+        setMoves,
+        mode,
+        activePlayer,
+        playerScores,
+        player2Name,
+        playerName,
         complexity,
         gameType,
+        soundOn,
+        setSoundOn,
         setGameState,
         setEndTime,
         setOutcome,
         setFirstCard,
         setSecondCard,
-        setLocked,
     } = memoryGameStore();
 
     const totalPairs = TOTAL_PAIRS[gameType]?.[complexity] ?? TOTAL_PAIRS.default[complexity];
@@ -33,31 +52,84 @@ export const GameHeader = () => {
         setFirstCard(null);
         setSecondCard(null);
         setLocked(false);
+        sfx.lose();
         setGameState("Ended");
         setOutcome("lost");
         setEndTime(new Date().toISOString());
     }
 
+    function peek() {
+        if (hintsLeft <= 0 || peeking || locked) return;
+        sfx.peek();
+        setHintsLeft(0);
+        setMoves(moves + 2); // peek costs 2 moves
+        setLocked(true);
+        setPeeking(true);
+        setTimeout(() => {
+            setPeeking(false);
+            setLocked(false);
+        }, 3000);
+    }
+
+    function toggleSound() {
+        setSoundOn(!soundOn);
+    }
+
     return (
         <div className='pb-4 space-y-4'>
-            <div className='flex items-baseline justify-between font-mono text-sm'>
+            <div className='flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-sm'>
+                <span className='text-xs uppercase tracking-wider text-muted-foreground bg-primary/90 text-primary-foreground px-2 py-0.5 rounded'>
+                    {mode}
+                </span>
                 {hasGameTimer ? (
                     <div className='flex items-baseline gap-2'>
                         <span className='text-muted-foreground text-xs uppercase tracking-wider'>Time left</span>
                         <CountdownTimer onComplete={timeOut} time={+gameTimer!} />
                     </div>
                 ) : (
-                    <div className='flex items-baseline gap-2'>
-                        <Timer startDate={startTime} />
-                    </div>
+                    <Timer startDate={startTime} />
                 )}
-                <span className='tabular-nums'>
+                {livesEnabled && <span aria-label={`${lives} lives left`}>{"♥".repeat(lives)}<span className='opacity-30'>{"♥".repeat(3 - lives)}</span></span>}
+                {streak > 0 && <span aria-label={`${streak} match streak`}>🔥 {streak}</span>}
+                <span className='tabular-nums ml-auto'>
                     Pairs {found}/{totalPairs} · Moves {moves}
                 </span>
             </div>
-            <div className='items-center gap-4 flex justify-end'>
-                <GameBackButton />
-                <CloseModal />
+            {mode === "Duel" && (
+                <div className='flex items-center gap-4 font-mono text-sm'>
+                    <span className='uppercase tracking-wider text-muted-foreground text-xs'>Turn</span>
+                    <span className='font-bold'>{activePlayer === 0 ? playerName : player2Name}</span>
+                    <span className='tabular-nums ml-auto'>
+                        {playerName} {playerScores[0]} · {playerScores[1]} {player2Name}
+                    </span>
+                </div>
+            )}
+            <div className='items-center gap-3 flex justify-between'>
+                <div className='flex items-center gap-3'>
+                    <button
+                        type="button"
+                        aria-label={soundOn ? "Mute sounds" : "Unmute sounds"}
+                        onClick={toggleSound}
+                        className='bg-white p-2 rounded-full cursor-pointer hover:scale-105 h-10 w-10 items-center flex'
+                    >
+                        {soundOn ? <Volume2 className='h-5 w-5' /> : <VolumeX className='h-5 w-5' />}
+                    </button>
+                    {gameType !== "Number-Sequence" && (
+                        <button
+                            type="button"
+                            aria-label={hintsLeft > 0 ? "Peek at the board (costs 2 moves)" : "No peeks left"}
+                            disabled={hintsLeft <= 0 || peeking}
+                            onClick={peek}
+                            className='bg-white p-2 rounded-full cursor-pointer hover:scale-105 h-10 w-10 items-center flex disabled:opacity-40 disabled:hover:scale-100'
+                        >
+                            <Eye className='h-5 w-5' />
+                        </button>
+                    )}
+                </div>
+                <div className='items-center gap-4 flex'>
+                    <GameBackButton />
+                    <CloseModal />
+                </div>
             </div>
         </div>
     );

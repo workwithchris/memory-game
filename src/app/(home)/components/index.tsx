@@ -1,7 +1,8 @@
 "use client"
-import React from 'react'
+import React, { useEffect } from 'react'
 
 import memoryGameStore from '../store/store'
+import { setSfxEnabled } from '../helpers/sfx';
 import Newgame from './game-states/new-game';
 import InfoDrawer from './game-info/info.drawer';
 import Game from './game/game';
@@ -10,7 +11,12 @@ import Ended from './game-states/ended';
 export default function MemoryGame() {
     const {
         gameState,
+        soundOn,
     } = memoryGameStore();
+
+    useEffect(() => {
+        setSfxEnabled(soundOn);
+    }, [soundOn]);
 
     if (gameState === "New") {
         return <div className='flex justify-center items-center h-screen w-screen relative p-5 lg:p-0'>

@@ -5,37 +5,63 @@ import generateNumbers from "../helpers/numbers";
 import { generateColors } from "../helpers/colors";
 import generateNumberSequence from "../helpers/numbers-sequence";
 import generateEmojis from "../helpers/emoji";
+import { dailySeed, seededRng } from "../helpers/core";
+import { sfx } from "../helpers/sfx";
+
+function cardsFor(type: GameType, level: string, rng: () => number) {
+    if (type === "Number") return generateNumbers(level, rng);
+    if (type === "Emoji") return generateEmojis(level, rng);
+    if (type === "Number-Sequence") return generateNumberSequence(level, rng);
+    return generateColors(level, rng);
+}
 
 export default function useMemoryGame() {
-    const { complexity,
+    const {
+        complexity,
+        mode,
         firstCard,
         matchedCards,
+        lives,
+        livesEnabled,
         setGameState,
+        setOutcome,
         secondCard,
         setMatchedCards,
         setFirstCard,
         setSecondCard,
         setLocked,
+        setLives,
+        setLostLife,
+        setStreak,
+        setMaxStreak,
+        setMismatches,
+        setActivePlayer,
+        setPlayerScores,
         setEndTime,
-        setOutcome,
+        playerScores,
+        activePlayer,
+        streak,
         gameType
     } = memoryGameStore();
 
     function endGame() {
+        sfx.win();
         setGameState("Ended")
         setOutcome("won")
         setEndTime(new Date().toISOString())
     }
 
-    function cardsFor(type: GameType, level: string) {
-        if (type === "Number") return generateNumbers(level);
-        if (type === "Emoji") return generateEmojis(level);
-        if (type === "Number-Sequence") return generateNumberSequence(level);
-        return generateColors(level);
+    function loseGame() {
+        sfx.lose();
+        setGameState("Ended")
+        setOutcome("lost")
+        setEndTime(new Date().toISOString())
     }
 
-    // deck is generated once per round
-    const [gameCards] = useState(() => cardsFor(gameType, complexity));
+    // deck is generated once per round; Daily mode uses a date-seeded shuffle
+    const [gameCards] = useState(() =>
+        cardsFor(gameType, complexity, mode === "Daily" ? seededRng(dailySeed()) : Math.random)
+    );
 
     useEffect(() => {
         if (secondCard && gameType !== "Number-Sequence") {
@@ -43,8 +69,31 @@ export default function useMemoryGame() {
             setLocked(true);
             const timer = setTimeout(() => {
                 if (firstCard!.color === secondCard!.color) {
+                    sfx.match();
+                    const nextStreak = streak + 1;
+                    setStreak(nextStreak);
+                    setMaxStreak(Math.max(nextStreak, memoryGameStore.getState().maxStreak));
+                    if (mode === "Duel") {
+                        const scores: [number, number] = [...playerScores];
+                        scores[activePlayer] += 1;
+                        setPlayerScores(scores);
+                    }
                     setMatchedCards([...matchedCards, firstCard!, secondCard])
                 } else {
+                    sfx.miss();
+                    setStreak(0);
+                    setMismatches(memoryGameStore.getState().mismatches + 1);
+                    if (mode === "Duel") {
+                        setActivePlayer(activePlayer === 0 ? 1 : 0);
+                    }
+                    if (livesEnabled) {
+                        const remaining = lives - 1;
+                        setLives(remaining);
+                        setLostLife(true);
+                        if (remaining <= 0) {
+                            loseGame();
+                        }
+                    }
                     if (complexity === "Extreme") {
                         setMatchedCards([])
                     }

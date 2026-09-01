@@ -1,12 +1,14 @@
 import memoryGameStore from '@/app/(home)/store/store';
 import { GameCardProp } from '@/app/(home)/types';
 import React, { useEffect } from 'react'
+import { sfx } from '@/app/(home)/helpers/sfx';
 
 export default function NumberSequenceCard({ color, index, isMatched, setIsMatched }: GameCardProp) {
-    const { complexity, matchedCards, setMatchedCards, locked, setLocked, moves, setMoves } = memoryGameStore();
+    const { complexity, matchedCards, setMatchedCards, locked, setLocked, moves, setMoves, peeking } = memoryGameStore();
 
     const handleNumberSequenceSelect = () => {
-        if (isMatched || locked) return;
+        if (isMatched || locked || peeking) return;
+        sfx.flip();
         setIsMatched(true)
         setLocked(true)
         setMoves(moves + 1)
@@ -38,16 +40,16 @@ export default function NumberSequenceCard({ color, index, isMatched, setIsMatch
 
     return <button
         type="button"
-        aria-label={isMatched ? `Sequence number ${color}` : `Hidden card ${index + 1}`}
+        aria-label={isMatched || peeking ? `Sequence number ${color}` : `Hidden card ${index + 1}`}
         onClick={handleNumberSequenceSelect}
         className={`${complexity === "Hard" || complexity === "Extreme" ? "h-12 w-12" : "h-16 w-16"} lg:h-20 lg:w-20 hover:scale-105 cursor-pointer transition-all rounded focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
     >
         <div className='flex items-center justify-center h-full rounded'
             style={{
-                backgroundColor: isMatched ? "green" : "white",
-                color: isMatched ? "white" : "black"
+                backgroundColor: isMatched || peeking ? "green" : "white",
+                color: isMatched || peeking ? "white" : "black"
             }}>
-            {isMatched && <span className='font-bold tabular-nums'>{color}</span>}
+            {(isMatched || peeking) && <span className='font-bold tabular-nums'>{color}</span>}
         </div>
     </button>
 }
