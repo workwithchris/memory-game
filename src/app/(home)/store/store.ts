@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Complexity, GameMode, GameState, GameType } from "../types";
+import { ColorTheme, Complexity, EmojiTheme, GameMode, GameState, GameType } from "../types";
 
 type Card = { index: number, color: string };
 
@@ -34,6 +34,13 @@ type MemoryGameStore = {
     pausedTotalMs: number;
     dailySeedValue: number | null;
     soundOn: boolean;
+    jokersEnabled: boolean;
+    emojiTheme: EmojiTheme;
+    colorTheme: ColorTheme;
+    customPairs: number;
+    customCols: number;
+    deadIndices: number[];
+    toast: string | null;
     gameCards: (string | number)[];
     firstCard: Card | null;
     secondCard: Card | null;
@@ -69,6 +76,13 @@ type MemoryGameStore = {
     setPausedTotalMs: (pausedTotalMs: number) => void;
     setDailySeedValue: (dailySeedValue: number | null) => void;
     setSoundOn: (soundOn: boolean) => void;
+    setJokersEnabled: (jokersEnabled: boolean) => void;
+    setEmojiTheme: (emojiTheme: EmojiTheme) => void;
+    setColorTheme: (colorTheme: ColorTheme) => void;
+    setCustomPairs: (customPairs: number) => void;
+    setCustomCols: (customCols: number) => void;
+    setDeadIndices: (deadIndices: number[]) => void;
+    setToast: (toast: string | null) => void;
     setFirstCard: (firstCard: Card | null) => void;
     setSecondCard: (secondCard: Card | null) => void;
     setMatchedCards: (matchedCards: Card[]) => void;
@@ -104,6 +118,13 @@ const initialState = {
     pausedTotalMs: 0,
     dailySeedValue: null as number | null,
     soundOn: true,
+    jokersEnabled: false,
+    emojiTheme: "Classic" as EmojiTheme,
+    colorTheme: "Vibrant" as ColorTheme,
+    customPairs: 12,
+    customCols: 4,
+    deadIndices: [] as number[],
+    toast: null as string | null,
     gameCards: [] as (string | number)[],
     firstCard: null as Card | null,
     secondCard: null as Card | null,
@@ -129,6 +150,11 @@ const memoryGameStore = create<MemoryGameStore>()(
                     livesEnabled: s.livesEnabled,
                     soundOn: s.soundOn,
                     roundWins: s.roundWins,
+                    jokersEnabled: s.jokersEnabled,
+                    emojiTheme: s.emojiTheme,
+                    colorTheme: s.colorTheme,
+                    customPairs: s.customPairs,
+                    customCols: s.customCols,
                 });
             },
             setGameCards: (gameCards) => set({ gameCards }),
@@ -161,6 +187,13 @@ const memoryGameStore = create<MemoryGameStore>()(
             setPausedTotalMs: (pausedTotalMs) => set({ pausedTotalMs }),
             setDailySeedValue: (dailySeedValue) => set({ dailySeedValue }),
             setSoundOn: (soundOn) => set({ soundOn }),
+            setJokersEnabled: (jokersEnabled) => set({ jokersEnabled }),
+            setEmojiTheme: (emojiTheme) => set({ emojiTheme }),
+            setColorTheme: (colorTheme) => set({ colorTheme }),
+            setCustomPairs: (customPairs) => set({ customPairs }),
+            setCustomCols: (customCols) => set({ customCols }),
+            setDeadIndices: (deadIndices) => set({ deadIndices }),
+            setToast: (toast) => set({ toast }),
             setFirstCard: (firstCard) => set({ firstCard }),
             setSecondCard: (secondCard) => set({ secondCard }),
             setMatchedCards: (matchedCards) => set({ matchedCards }),
@@ -172,7 +205,7 @@ const memoryGameStore = create<MemoryGameStore>()(
             // rehydrate manually after mount to avoid SSR hydration mismatch
             skipHydration: true,
             partialize: (s) => {
-                const { locked, peeking, paused, pausedAt, pausedTotalMs, ...rest } = s as MemoryGameStore & Record<string, unknown>;
+                const { locked, peeking, paused, pausedAt, pausedTotalMs, toast, ...rest } = s as MemoryGameStore & Record<string, unknown>;
                 return rest as MemoryGameStore;
             },
         }

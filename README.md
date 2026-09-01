@@ -20,22 +20,29 @@ Play it: four game types, five modes, four difficulty levels, all playable solo 
 - **Time Attack** — 60 seconds, clear as much as you can
 - **Duel** — hot-seat for two players: a match keeps your turn, a miss passes it
 - **Best of 3** — a duel across three rounds, first to two round wins takes the series
+- **Zen** — no timer, no score; practice at your own pace
+- **Custom board** — any pair count (4–40) and column layout
 
-**Complexity** — Easy (8 pairs), Medium (16), Hard (24), Extreme (24, and any mismatch wipes your found pairs).
+**Complexity** — Easy (8 pairs), Medium (16), Hard (24), Extreme (24, mismatch wipes found pairs, and after every 5 matches the remaining cards quietly swap positions).
 
 **Tools**
 
 - Optional **3 lives** — each mismatch costs one; run out and the round is lost
+- Optional **wildcards** — two ★ jokers that match anything (their partner's twin auto-clears)
+- **Trap card** — Hard/Extreme boards hide one ☠️: costs 2 moves and breaks your streak
 - **Peek** — once per round, reveal the whole board for 3 seconds (costs 2 moves)
-- **Pause** — hides the board and freezes the timer
-- **Sound effects** — Web Audio, toggleable
+- **Pause** — hides the board and freezes the timer; auto-pauses after 30s idle
+- **Sound effects + haptics** — Web Audio and vibration, toggleable
 - **Keyboard play** — Tab into the grid, arrow keys to move, Enter/Space to flip
+- **Theme packs** — emoji packs (Faces/Animals/Food/Space) and color palettes (Vibrant/Pastel/Neon)
 
 **Progress (saved locally)**
 
-- Best time and fewest moves per game type + complexity
-- Achievements (first clear, flawless run, 5-streak, daily grinder, and more)
+- Best time and fewest moves per game type + complexity, plus a best-time sparkline
+- Achievements (first clear, flawless run, 5-streak, comeback wins, and more)
+- Daily-streak calendar
 - An in-progress round survives a page refresh
+- Share your result as an image (Web Share API, with clipboard/download fallback)
 
 ## Stack
 

@@ -1,16 +1,10 @@
 import { Eye, Volume2, VolumeX } from "lucide-react";
 
-import memoryGameStore from "../../store/store";
-import CountdownTimer from "./countdown-timer";
+import memoryGameStore from "../../store/store";import CountdownTimer from "./countdown-timer";
 import GameBackButton from "../game-info/back-button";
 import CloseModal from "./modal/close.modal";
 import Timer from "@/components/game-timer";
 import { sfx } from "../../helpers/sfx";
-
-const TOTAL_PAIRS: Record<string, Record<string, number>> = {
-    "Number-Sequence": { Easy: 16, Medium: 32, Hard: 48, Extreme: 48 },
-    default: { Easy: 8, Medium: 16, Hard: 24, Extreme: 24 },
-};
 
 export const GameHeader = () => {
     const {
@@ -18,6 +12,7 @@ export const GameHeader = () => {
         hasGameTimer,
         gameTimer,
         matchedCards,
+        gameCards,
         moves,
         streak,
         lives,
@@ -49,9 +44,9 @@ export const GameHeader = () => {
         setSecondCard,
     } = memoryGameStore();
 
-    const totalPairs = TOTAL_PAIRS[gameType]?.[complexity] ?? TOTAL_PAIRS.default[complexity];
-    const found = gameType === "Number-Sequence" ? matchedCards.length : matchedCards.length / 2;
-    const nextTarget = Math.min(matchedCards.length + 1, totalPairs);
+    const totalCards = gameCards.length;
+    const found = matchedCards.length;
+    const nextTarget = Math.min(matchedCards.length + 1, totalCards);
 
     function timeOut() {
         setFirstCard(null);
@@ -102,7 +97,7 @@ export const GameHeader = () => {
                 {livesEnabled && <span aria-label={`${lives} lives left`}>{"♥".repeat(lives)}<span className='opacity-30'>{"♥".repeat(3 - lives)}</span></span>}
                 {streak > 0 && <span aria-label={`${streak} match streak`}>🔥 {streak}</span>}
                 <span className='tabular-nums ml-auto'>
-                    Pairs {found}/{totalPairs} · Moves {moves}
+                    Cards {found}/{totalCards} · Moves {moves}
                 </span>
             </div>
             {(mode === "Duel" || mode === "BestOf3") && (

@@ -34,11 +34,18 @@ function tone(freq: number, dur = 0.08, type: OscillatorType = "square", vol = 0
     osc.stop(t + dur + 0.02);
 }
 
+// haptic feedback (mobile); independent of sound toggle
+function buzz(pattern: number | number[]) {
+    try {
+        navigator.vibrate?.(pattern);
+    } catch { }
+}
+
 export const sfx = {
-    flip: () => tone(520, 0.05),
-    match: () => { tone(660, 0.08); tone(880, 0.1, "square", 0.04, 0.09); },
-    miss: () => tone(180, 0.18, "sawtooth", 0.05),
-    peek: () => { tone(440, 0.1, "triangle", 0.05); tone(660, 0.1, "triangle", 0.05, 0.08); },
-    win: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.12, "square", 0.05, i * 0.1)),
-    lose: () => [400, 300, 200].forEach((f, i) => tone(f, 0.16, "sawtooth", 0.05, i * 0.12)),
+    flip: () => { tone(520, 0.05); buzz(8); },
+    match: () => { tone(660, 0.08); tone(880, 0.1, "square", 0.04, 0.09); buzz(20); },
+    miss: () => { tone(180, 0.18, "sawtooth", 0.05); buzz(40); },
+    peek: () => { tone(440, 0.1, "triangle", 0.05); tone(660, 0.1, "triangle", 0.05, 0.08); buzz(15); },
+    win: () => { [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.12, "square", 0.05, i * 0.1)); buzz([20, 40, 20]); },
+    lose: () => { [400, 300, 200].forEach((f, i) => tone(f, 0.16, "sawtooth", 0.05, i * 0.12)); buzz([40, 20, 40]); },
 };

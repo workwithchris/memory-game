@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import memoryGameStore from "../store/store";
-import { buildDeck } from "../helpers/deck";
+import { buildDeck, JOKER, TRAP } from "../helpers/deck";
 import { sfx } from "../helpers/sfx";
+import { getUnlocked, unlock } from "../helpers/progress";
+import { shuffle } from "../helpers/core";
 
 export default function useMemoryGame() {
     const {
@@ -10,12 +12,16 @@ export default function useMemoryGame() {
         gameCards,
         firstCard,
         matchedCards,
+        deadIndices,
         lives,
         livesEnabled,
         setGameState,
         setOutcome,
         secondCard,
         setMatchedCards,
+        setGameCards,
+        setDeadIndices,
+        setToast,
         setFirstCard,
         setSecondCard,
         setLocked,
@@ -54,8 +60,21 @@ export default function useMemoryGame() {
             // lock input while the pair is being judged
             setLocked(true);
             const timer = setTimeout(() => {
-                if (firstCard!.color === secondCard!.color) {
+                const a = firstCard!.color;
+                const b = secondCard!.color;
+                // jokers match anything
+                const isMatch = a === b || a === JOKER || b === JOKER;
+                if (isMatch) {
                     sfx.match();
+                    const additions = [firstCard!, secondCard!];
+                    // joker + normal: the normal card's twin is auto-matched too
+                    if (a === JOKER && b !== JOKER) {
+                        const twin = gameCards.findIndex((c, i) => c === b && i !== secondCard!.index && !matchedCards.some(m => m.index === i) && !deadIndices.includes(i));
+                        if (twin >= 0) additions.push({ index: twin, color: b });
+                    } else if (b === JOKER && a !== JOKER) {
+                        const twin = gameCards.findIndex((c, i) => c === a && i !== firstCard!.index && !matchedCards.some(m => m.index === i) && !deadIndices.includes(i));
+                        if (twin >= 0) additions.push({ index: twin, color: a });
+                    }
                     const nextStreak = streak + 1;
                     setStreak(nextStreak);
                     setMaxStreak(Math.max(nextStreak, memoryGameStore.getState().maxStreak));
@@ -64,7 +83,20 @@ export default function useMemoryGame() {
                         scores[activePlayer] += 1;
                         setPlayerScores(scores);
                     }
-                    setMatchedCards([...matchedCards, firstCard!, secondCard])
+                    setMatchedCards([...matchedCards, ...additions]);
+
+                    // Extreme: after every 5 matches, remaining cards quietly swap positions
+                    const totalMatched = matchedCards.length + additions.length;
+                    if (complexity === "Extreme" && totalMatched > 0 && totalMatched % 10 === 0 && totalMatched < gameCards.length) {
+                        const keep = new Set<number>([...matchedCards.map(m => m.index), ...additions.map(m => m.index), ...deadIndices]);
+                        const rest = shuffle(gameCards.filter((_, i) => !keep.has(i)));
+                        const next = [...gameCards];
+                        let k = 0;
+                        for (let i = 0; i < gameCards.length; i++) {
+                            if (!keep.has(i)) next[i] = rest[k++];
+                        }
+                        setGameCards(next);
+                    }
                 } else {
                     sfx.miss();
                     setStreak(0);
@@ -84,6 +116,11 @@ export default function useMemoryGame() {
                         setMatchedCards([])
                     }
                 }
+                // mid-game achievement toast: 5-streak
+                if (memoryGameStore.getState().maxStreak === 5 && !getUnlocked().includes("streak-5")) {
+                    unlock(["streak-5"]);
+                    setToast("🏆 In the Zone — 5 in a row!");
+                }
                 setFirstCard(null)
                 setSecondCard(null)
                 setLocked(false)
@@ -92,32 +129,12 @@ export default function useMemoryGame() {
         }
     }, [secondCard])
 
+    // round is over when every card is accounted for (matched or neutralized trap)
     useEffect(() => {
-        if (gameType === "Number-Sequence") {
-            const matchCounts = {
-                "Easy": 16,
-                "Medium": 32,
-                "Hard": 48,
-                "Extreme": 48
-            };
-
-            if (matchedCards.length === matchCounts[complexity]) {
-                endGame();
-            }
+        if (gameCards.length > 0 && matchedCards.length + deadIndices.length === gameCards.length) {
+            endGame();
         }
-        else {
-            const matchCounts = {
-                "Easy": 8,
-                "Medium": 16,
-                "Hard": 24,
-                "Extreme": 24
-            };
-
-            if (matchedCards.length === matchCounts[complexity] * 2) {
-                endGame();
-            }
-        }
-    }, [matchedCards])
+    }, [matchedCards, deadIndices])
 
     return { gameCards }
 }

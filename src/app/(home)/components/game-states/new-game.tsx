@@ -32,6 +32,16 @@ export default function Newgame() {
         setMode,
         livesEnabled,
         setLivesEnabled,
+        jokersEnabled,
+        setJokersEnabled,
+        emojiTheme,
+        setEmojiTheme,
+        colorTheme,
+        setColorTheme,
+        customPairs,
+        setCustomPairs,
+        customCols,
+        setCustomCols,
         soundOn,
         setSoundOn,
         dailySeedValue,
@@ -42,12 +52,16 @@ export default function Newgame() {
 
     const best = bestFor(gameType, complexity);
     const duelish = mode === "Duel" || mode === "BestOf3";
+    const custom = mode === "Custom";
 
     function applyMode(next: string) {
         setMode(next as typeof mode);
         if (next === "TimeAttack") {
             setHasGameTimer(true);
             setGameTimer("1");
+        } else if (next === "Zen") {
+            setHasGameTimer(false);
+            setGameTimer("3");
         } else {
             setHasGameTimer(false);
             setGameTimer("3");
@@ -58,7 +72,12 @@ export default function Newgame() {
         setPlayerName(playernameRef.current!.value || "Player");
         if (duelish) setPlayer2Name(player2nameRef.current?.value || "Player 2");
         resetRound();
-        setGameCards(buildDeck(gameType, complexity, mode, dailySeedValue));
+        setGameCards(buildDeck(gameType, complexity, mode, dailySeedValue, {
+            pairs: custom ? customPairs : undefined,
+            emojiTheme,
+            colorTheme,
+            jokers: jokersEnabled,
+        }));
         setGameState("Playing");
         setStartTime(new Date().toISOString());
         playernameRef.current!.value = "";
@@ -106,49 +125,115 @@ export default function Newgame() {
                                 <SelectItem value="TimeAttack">Time Attack (60s)</SelectItem>
                                 <SelectItem value="Duel">Duel (2 players)</SelectItem>
                                 <SelectItem value="BestOf3">Best of 3 (2 players)</SelectItem>
+                                <SelectItem value="Zen">Zen (no pressure)</SelectItem>
+                                <SelectItem value="Custom">Custom board</SelectItem>
                             </SelectContent>
                         </Select>
                         {mode === "Daily" && dailySeedValue && (
                             <p className='pt-1 text-xs text-muted-foreground'>Board of {dailySeedValue}</p>
                         )}
                     </div>
-                    <div>
-                        <Label>Game Type</Label>
-                        <Select onValueChange={setGameType}>
-                            <SelectTrigger>
-                                <SelectValue placeholder={gameType} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Color">Color</SelectItem>
-                                <SelectItem value="Number">Number</SelectItem>
-                                <SelectItem value="Number-Sequence">Number Sequence</SelectItem>
-                                <SelectItem value="Emoji">Emoji</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        <Label>Game Complexity</Label>
-                        <Select onValueChange={setComplexity}>
-                            <SelectTrigger>
-                                <SelectValue placeholder={complexity} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Easy">Easy</SelectItem>
-                                <SelectItem value="Medium">Medium</SelectItem>
-                                <SelectItem value="Hard">Hard</SelectItem>
-                                <SelectItem value="Extreme">Extreme</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {best && (
-                            <p className='pt-1 text-xs text-muted-foreground'>
-                                Your best: {best.wins > 0 ? `${best.bestTimeMs !== null ? Math.round(best.bestTimeMs / 1000) + "s" : "—"} · ${best.bestMoves ?? "—"} moves` : "no wins yet"}
-                            </p>
-                        )}
-                    </div>
+                    {!custom && (
+                        <div>
+                            <Label>Game Type</Label>
+                            <Select onValueChange={setGameType}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={gameType} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Color">Color</SelectItem>
+                                    <SelectItem value="Number">Number</SelectItem>
+                                    <SelectItem value="Number-Sequence">Number Sequence</SelectItem>
+                                    <SelectItem value="Emoji">Emoji</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    {!custom && (
+                        <div>
+                            <Label>Game Complexity</Label>
+                            <Select onValueChange={setComplexity}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={complexity} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Easy">Easy</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="Hard">Hard</SelectItem>
+                                    <SelectItem value="Extreme">Extreme</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {best && (
+                                <p className='pt-1 text-xs text-muted-foreground'>
+                                    Your best: {best.wins > 0 ? `${best.bestTimeMs !== null ? Math.round(best.bestTimeMs / 1000) + "s" : "—"} · ${best.bestMoves ?? "—"} moves` : "no wins yet"}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                    {custom && (
+                        <div className='space-y-3'>
+                            <div>
+                                <Label>Pairs: {customPairs}</Label>
+                                <input
+                                    type="range"
+                                    min={4}
+                                    max={40}
+                                    value={customPairs}
+                                    onChange={(e) => setCustomPairs(+e.target.value)}
+                                    className='w-full accent-current'
+                                />
+                            </div>
+                            <div>
+                                <Label>Columns: {customCols}</Label>
+                                <input
+                                    type="range"
+                                    min={2}
+                                    max={10}
+                                    value={customCols}
+                                    onChange={(e) => setCustomCols(+e.target.value)}
+                                    className='w-full accent-current'
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {gameType === "Color" && !custom && (
+                        <div>
+                            <Label>Card Palette</Label>
+                            <Select onValueChange={(v) => setColorTheme(v as typeof colorTheme)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={colorTheme} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Vibrant">Vibrant</SelectItem>
+                                    <SelectItem value="Pastel">Pastel</SelectItem>
+                                    <SelectItem value="Neon">Neon</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    {gameType === "Emoji" && !custom && (
+                        <div>
+                            <Label>Emoji Pack</Label>
+                            <Select onValueChange={(v) => setEmojiTheme(v as typeof emojiTheme)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={emojiTheme} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Classic">Faces</SelectItem>
+                                    <SelectItem value="Animals">Animals</SelectItem>
+                                    <SelectItem value="Food">Food</SelectItem>
+                                    <SelectItem value="Space">Space</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                     <div className='flex gap-4'>
-                        <Checkbox checked={hasGameTimer} disabled={mode === "TimeAttack"} onCheckedChange={() => {
-                            setHasGameTimer(!hasGameTimer)
-                        }}>Has Game Timer</Checkbox>
+                        <Checkbox
+                            checked={hasGameTimer}
+                            disabled={mode === "TimeAttack" || mode === "Zen"}
+                            onCheckedChange={() => {
+                                setHasGameTimer(!hasGameTimer)
+                            }}>Has Game Timer</Checkbox>
                         <Label>Set Game Timer</Label>
                     </div>
                     {hasGameTimer && mode !== "TimeAttack" && <div>
@@ -169,6 +254,13 @@ export default function Newgame() {
                         <Checkbox checked={livesEnabled} onCheckedChange={() => setLivesEnabled(!livesEnabled)}>Lives</Checkbox>
                         <Label>3 lives — a mismatch costs one</Label>
                     </div>
+                    <div className='flex gap-4'>
+                        <Checkbox checked={jokersEnabled} onCheckedChange={() => setJokersEnabled(!jokersEnabled)}>Wildcards</Checkbox>
+                        <Label>2 jokers that match anything</Label>
+                    </div>
+                    <p className='text-xs text-muted-foreground'>
+                        Hard &amp; Extreme boards also hide one ☠️ trap card — flipping it costs 2 moves and breaks your streak.
+                    </p>
                     <div className='pt-4'>
                         <Button className='w-full' onClick={startGame}>
                             Start Game

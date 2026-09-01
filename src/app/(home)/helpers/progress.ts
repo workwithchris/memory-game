@@ -10,6 +10,8 @@ export type RunSummary = {
     maxStreak: number;
     mode: string;
     lostLife: boolean;
+    livesLeft: number;
+    timeLimitSec: number | null;
 };
 
 export type StatEntry = {
@@ -17,12 +19,14 @@ export type StatEntry = {
     wins: number;
     bestTimeMs: number | null;
     bestMoves: number | null;
+    history: number[];
 };
 
 export type Stats = Record<string, StatEntry>;
 
 const STATS_KEY = "memory-stats";
 const ACHIEVEMENTS_KEY = "memory-achievements";
+const DAILY_KEY = "memory-daily";
 
 function readJson<T>(key: string, fallback: T): T {
     if (typeof window === "undefined") return fallback;
@@ -50,7 +54,7 @@ export function recordRun(run: RunSummary): { isNewBestTime: boolean; isNewBestM
     if (typeof window === "undefined") return { isNewBestTime: false, isNewBestMoves: false };
     const stats = getStats();
     const key = keyFor(run.gameType, run.complexity);
-    const entry: StatEntry = stats[key] ?? { games: 0, wins: 0, bestTimeMs: null, bestMoves: null };
+    const entry: StatEntry = stats[key] ?? { games: 0, wins: 0, bestTimeMs: null, bestMoves: null, history: [] };
     entry.games += 1;
     let isNewBestTime = false;
     let isNewBestMoves = false;
@@ -64,10 +68,36 @@ export function recordRun(run: RunSummary): { isNewBestTime: boolean; isNewBestM
             entry.bestMoves = run.moves;
             isNewBestMoves = true;
         }
+        // winning-run history for the improvement sparkline (last 30)
+        entry.history = [...(entry.history ?? []), run.timeMs].slice(-30);
     }
     stats[key] = entry;
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
     return { isNewBestTime, isNewBestMoves };
+}
+
+// ---- daily streak ----
+
+export function dateStr(offsetDays = 0): string {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}${mm}${dd}`;
+}
+
+export function recordDailyPlay(): void {
+    if (typeof window === "undefined") return;
+    const data = readJson<{ days: string[]; streak: number }>(DAILY_KEY, { days: [], streak: 0 });
+    const today = dateStr();
+    if (data.days.includes(today)) return;
+    data.streak = data.days.includes(dateStr(-1)) ? data.streak + 1 : 1;
+    data.days = [...data.days, today].slice(-60);
+    localStorage.setItem(DAILY_KEY, JSON.stringify(data));
+}
+
+export function getDaily(): { days: string[]; streak: number } {
+    return readJson<{ days: string[]; streak: number }>(DAILY_KEY, { days: [], streak: 0 });
 }
 
 // ---- achievements ----
@@ -86,6 +116,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     { id: "daily-done", name: "Daily Grinder", description: "Complete a Daily challenge" },
     { id: "survivor", name: "Survivor", description: "Win with lives on after losing at least one" },
     { id: "duelist", name: "Duelist", description: "Play a Duel to the end" },
+    { id: "second-wind", name: "Second Wind", description: "Win after dropping to your last life" },
+    { id: "photo-finish", name: "Photo Finish", description: "Win Time Attack with 10+ seconds to spare" },
 ];
 
 export function getUnlocked(): string[] {
@@ -104,8 +136,10 @@ export function evaluate(run: RunSummary, unlocked: string[]): string[] {
     check("speed-demon", run.won && run.timeMs < 60000 && (run.complexity === "Medium" || run.complexity === "Hard" || run.complexity === "Extreme"));
     check("streak-5", run.maxStreak >= 5);
     check("daily-done", run.won && run.mode === "Daily");
-    check("survivor", run.won && run.maxStreak >= 0 && run.lostLife);
-    check("duelist", run.mode === "Duel");
+    check("survivor", run.won && run.lostLife);
+    check("duelist", run.mode === "Duel" || run.mode === "BestOf3");
+    check("second-wind", run.won && run.lostLife && run.livesLeft === 1);
+    check("photo-finish", run.won && run.mode === "TimeAttack" && run.timeLimitSec !== null && run.timeLimitSec - run.timeMs / 1000 >= 10);
     return earned;
 }
 

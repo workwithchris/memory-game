@@ -2,9 +2,9 @@ import { Card } from '@/components/ui/card'
 import React, { useEffect } from 'react'
 import { Button } from '@/components/ui/button';
 import memoryGameStore from '../../store/store';
-import { Share2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { ACHIEVEMENTS, evaluate, recordRun, RunSummary, unlock } from '../../helpers/progress';
+import { ACHIEVEMENTS, bestFor, evaluate, recordDailyPlay, recordRun, RunSummary, unlock } from '../../helpers/progress';
+import { shareCard } from '../../helpers/share-card';
 
 function getTimeDifference(start: Date, end: Date): string {
   if (!(start instanceof Date) || !(end instanceof Date)) {
@@ -16,6 +16,21 @@ function getTimeDifference(start: Date, end: Date): string {
   let minutes = Math.floor(diff / 60000);
   let seconds = Math.floor(diff / 1000);
   return `${hours !== 0 ? `${hours}h:` : ""}${minutes !== 0 ? `${minutes}m:` : ""}${seconds}s`;
+}
+
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const w = 200, h = 40, pad = 4;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values
+    .map((v, i) => `${pad + (i / (values.length - 1)) * (w - 2 * pad)},${h - pad - ((v - min) / range) * (h - 2 * pad)}`)
+    .join(" ");
+  return (
+    <svg width={w} height={h} className='mx-auto' role='img' aria-label='Best time trend'>
+      <polyline points={points} fill='none' stroke='currentColor' strokeWidth={2} className='text-primary' />
+    </svg>
+  );
 }
 
 export default function Ended() {
@@ -31,11 +46,16 @@ export default function Ended() {
     moves,
     mismatches,
     maxStreak,
+    lives,
     livesEnabled,
     lostLife,
+    hasGameTimer,
+    gameTimer,
     matchedCards,
+    gameCards,
     playerScores,
     roundWins,
+    dailySeedValue,
     setRoundWins,
     setPlayerScores,
     setActivePlayer,
@@ -47,16 +67,23 @@ export default function Ended() {
   const won = !lost;
   const duelish = mode === "Duel" || mode === "BestOf3";
   const bestOf3 = mode === "BestOf3";
+  const zen = mode === "Zen";
 
   // run recorded once, on mount
   const [result] = React.useState(() => {
     const timeMs = Math.abs(new Date(endTime!).getTime() - new Date(startTime!).getTime());
     const run: RunSummary = {
       gameType, complexity, won, timeMs, moves, mismatches, maxStreak, mode, lostLife,
+      livesLeft: lives,
+      timeLimitSec: hasGameTimer ? +gameTimer! * 60 : null,
     };
+    if (zen) return { run, flags: { isNewBestTime: false, isNewBestMoves: false }, earned: [] as string[], value: null, history: [] as number[] };
+
     const flags = recordRun(run);
     const earned = evaluate(run, []);
     unlock(earned);
+    if (mode === "Daily") recordDailyPlay();
+
     let value: number | null = null;
     if (won && !duelish) {
       const elapsedSec = Math.round(timeMs / 1000);
@@ -67,10 +94,11 @@ export default function Ended() {
         + Math.max(0, 240 - elapsedSec) * 2
       );
     }
-    return { run, flags, earned, value };
+    const history = bestFor(gameType, complexity)?.history ?? [];
+    return { run, flags, earned, value, history };
   });
 
-  const { run, flags: bestFlags, earned: newAchievements, value: score } = result;
+  const { run, flags: bestFlags, earned: newAchievements, value: score, history } = result;
 
   // BestOf3: round winner derived from scores; credit happens on "Next round"
   const roundWinner = bestOf3 && playerScores[0] !== playerScores[1]
@@ -82,23 +110,28 @@ export default function Ended() {
     : null;
 
   useEffect(() => {
-    if (won && !duelish) {
+    if (won && !duelish && !zen) {
       confetti({ particleCount: 120, spread: 80, disableForReducedMotion: true });
     }
   }, []);
 
   function share() {
-    const dailySuffix = mode === "Daily" && run.gameType ? ` — replay: ${window.location.origin}/?daily=${run.mode === "Daily" ? memoryGameStore.getState().dailySeedValue : ""}` : "";
-    const text = duelish
-      ? `Memory Duel: ${playerName} ${playerScores[0]} — ${playerScores[1]} ${player2Name}${roundWinner !== null ? `, ${roundWinner === 0 ? playerName : player2Name} takes the round` : ", tied"}`
-      : won
-        ? `Memory Game — ${gameType}/${complexity}: cleared in ${getTimeDifference(new Date(startTime!), new Date(endTime!))} with ${moves} moves${score !== null ? ` (score ${score})` : ""}`
-        : `Memory Game — ${gameType}/${complexity}: ${lost ? "time ran out" : "lives ran out"} after ${matchedCards.length / 2} pairs and ${moves} moves`;
-    if (navigator.share) {
-      navigator.share({ title: "Memory Game", text }).catch(() => { });
-    } else {
-      navigator.clipboard?.writeText(text + (mode === "Daily" ? dailySuffix : "")).catch(() => { });
+    const dailyLink = mode === "Daily" ? ` Replay: ${window.location.origin}/?daily=${dailySeedValue}` : "";
+    if (duelish) {
+      void shareCard({
+        title: seriesWinner !== null ? "Series Won" : bestOf3 ? "Round Over" : "Duel Over",
+        subtitle: `${gameType} · ${complexity}`,
+        big: `${playerScores[0]} — ${playerScores[1]}`,
+        footer: `${playerName} vs ${player2Name}${roundWinner !== null ? ` · ${roundWinner === 0 ? playerName : player2Name} takes the round` : " · tied"}${dailyLink}`,
+      });
+      return;
     }
+    void shareCard({
+      title: lost ? "Time's Up" : "Cleared",
+      subtitle: `${gameType} · ${complexity}${mode !== "Classic" ? ` · ${mode}` : ""}`,
+      big: getTimeDifference(new Date(startTime!), new Date(endTime!)),
+      footer: `${moves} moves · ${mismatches} misses · streak ${maxStreak}${score !== null ? ` · score ${score}` : ""}${dailyLink}`,
+    });
   }
 
   function nextRound() {
@@ -136,7 +169,7 @@ export default function Ended() {
           ? "Series Won!"
           : bestOf3
             ? `Round ${roundWins[0] + roundWins[1] + 1} Over`
-            : duelish ? "Duel Over" : lost ? "Time's Up" : "Congratulations"}
+            : duelish ? "Duel Over" : lost ? "Time's Up" : zen ? "Round Complete" : "Congratulations"}
       </h2>
       {duelish ? (
         <>
@@ -161,13 +194,14 @@ export default function Ended() {
           <p className='text-2xl font-semibold font-serif'>{playerName}</p>
           <p className='text-xl'>{lost ? "You ran out of time after" : "You have completed the game in"}</p>
           <p className='text-4xl uppercase font-bold'>{getTimeDifference(new Date(startTime!), new Date(endTime!))}</p>
-          {score !== null && <p className='text-xl'>Score: <span className='font-bold tabular-nums'>{score}</span></p>}
+          {!zen && score !== null && <p className='text-xl'>Score: <span className='font-bold tabular-nums'>{score}</span></p>}
           <p className='text-sm text-muted-foreground'>Moves {moves} · Misses {mismatches} · Best streak {maxStreak}</p>
-          {(bestFlags.isNewBestTime || bestFlags.isNewBestMoves) && (
+          {!zen && (bestFlags.isNewBestTime || bestFlags.isNewBestMoves) && (
             <p className='text-sm font-bold text-primary'>
               {bestFlags.isNewBestTime && "New best time! "}{bestFlags.isNewBestMoves && "New fewest moves!"}
             </p>
           )}
+          {won && <Sparkline values={history} />}
         </>
       )}
       {newAchievements.length > 0 && (
@@ -199,7 +233,7 @@ export default function Ended() {
           setStartTime(null);
         }}>New Game</Button>
         <Button variant='secondary' onClick={share}>
-          <Share2 className='h-4 w-4 mr-2' /> Share result
+          Share result
         </Button>
       </div>
     </Card>
