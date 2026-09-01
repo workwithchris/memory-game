@@ -73,10 +73,4 @@ src/app/(home)/           # the game (single-page app)
 src/components/ui/        # shadcn/ui primitives
 ```
 
-## Deploy
-
-Deploys to Vercel as-is (static export of the app route). The service worker (`public/sw.js`) enables basic offline support in production.
-
----
-
 Created by Chris Thapa.

@@ -58,7 +58,7 @@ export default function ColorCard({ color, index, isMatched, setIsMatched }: Gam
             type="button"
             aria-label={shown ? `Card ${index + 1}: ${gameType === "Color" ? "color" : color}` : `Hidden card ${index + 1}`}
             onClick={handleSelectCard}
-            className={`${complexity === "Hard" || complexity === "Extreme" ? "h-12 w-12" : "h-16 w-16"} lg:h-20 lg:w-20 hover:scale-105 cursor-pointer transition-all rounded focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
+            className={`${complexity === "Hard" || complexity === "Extreme" ? "h-12 w-12" : "h-16 w-16"} lg:h-20 lg:w-20 hover:scale-105 cursor-pointer transition-all rounded bg-white border shadow-sm flex items-center justify-center focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
         >
             {shown && (
                 gameType === "Color" ? (
